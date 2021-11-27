@@ -1,27 +1,29 @@
-# include "huffman.h"
-# include <stdio.h>
+#include "huffman.h"
+#include <string.h>
+#include <stdio.h>
 
-int main(void *args){
+int main(int argc, char **argv){
 	h_error_t result = H_OK;
-	String flag = args[1];
-	String file_1 = args[2];
-	String file_2 = args[3];
+	printf("%d\n", argc);
+	char *flag = argv[1];
+	char *file_1 = argv[2];
+	char *file_2 = argv[3];
 	
-	if (equal(flag,"p")){
+	if (strcmp(flag,"p") == 0){
 		result = h_pack(file_1, file_2);
 		if (! result)
-			print_f("%s is packed successfully into %s!\n", file_1, file_2);
+			printf("%s is packed successfully into %s!\n", file_1, file_2);
 			
 		else
-			print_f("There is some error :/");
+			printf("There is some error :/");
 	}
-	else if (equal(flag,"u")) {
+	else if (strcmp(flag,"u") == 0) {
 		result = h_unpack(file_1, file_2);
 		if (! result)
-			print_f("%s is packed successfully into %s!\n", file_1, file_2);
+			printf("%s is packed successfully into %s!\n", file_1, file_2);
 			
 		else{
-			print_f("There is some error :/");
+			printf("There is some error :/");
 			h_print_error(result);
 		}
 	}
