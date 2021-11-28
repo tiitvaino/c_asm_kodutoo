@@ -6,30 +6,22 @@
 //#include <stdbool.h>
 #include <stdlib.h>
 
-
-
-h_error_t h_pack(char *src_file_name, char *dst_file_name){
-    printf("h_pack %s to %s\n", src_file_name, dst_file_name);// TODO delete later
+h_error_t h_pack(FILE *src_file, FILE *dst_file){
+    printf("h_pack \n");// TODO delete later
     dict_dict_t * dict = NULL;
-    
-    FILE *src_file , *dst_file;
-    src_file =fopen(src_file_name, "r");
-    dst_file = fopen(dst_file_name, "w"); // if does not exists then creates one, 
-                                                // else deletes content
-
     int n = 1000;
     char buf[1000];
 
     fgets(buf, n, (FILE*)src_file);
     printf("%s\n",buf);
-
     
-    int src_file_error = fclose(src_file);
-    int dst_file_error = fclose(dst_file);
+    return H_OK;
 }
 
-h_error_t h_unpack(char *src_file_name, char *dst_file_name){
-    printf("h_unpack %s to %s\n", src_file_name, dst_file_name); // TODO delete later
+h_error_t h_unpack(FILE *src_file, FILE *dst_file){
+    printf("h_unpack\n"); // TODO delete later
+
+    return H_OK;
 }
 
 void h_print_error(h_error_t error){

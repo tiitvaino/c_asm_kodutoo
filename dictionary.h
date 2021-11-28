@@ -10,7 +10,7 @@ typedef struct {
 } dict_node_t;
 
 typedef struct {
-    dict_node_t* nodes;
+    dict_node_t *nodes;
 } dict_dict_t;
 
 //#############################################################

@@ -1,4 +1,5 @@
 // huffman.h
+#include <stdio.h>
 
 typedef enum{
 	H_OK,
@@ -6,13 +7,13 @@ typedef enum{
 } h_error_t;
 
 h_error_t h_pack(
-	char * src_file_name,
-	char * dst_file_name
+	FILE * src_file,
+	FILE * dst_file
 );
 
 h_error_t h_unpack(
-	char * src_file_name,
-	char * dst_file_name
+	FILE * src_file,
+	FILE * dst_file
 );
 
 void h_print_error(
