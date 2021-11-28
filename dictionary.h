@@ -11,6 +11,7 @@ typedef struct {
 
 typedef struct {
     dict_node_t *nodes;
+    int size;
 } dict_dict_t;
 
 //#############################################################
