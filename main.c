@@ -5,9 +5,9 @@
 int main(int argc, char **argv){
 	h_error_t result = H_OK;
 	printf("%d\n", argc);
-	char *flag = argv[1];
-	char *file_1 = argv[2];
-	char *file_2 = argv[3];
+	char *flag = "p";argv[1];
+	char *file_1 = "./proov.txt";//argv[2];
+	char *file_2 = "./proov.hup";//argv[3];
 	
 	if (strcmp(flag,"p") == 0){
 		result = h_pack(file_1, file_2);

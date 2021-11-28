@@ -1,6 +1,9 @@
+
+APP_NAME = hufpakk
+TEST_FILE = proov.hup
+
 CC = gcc
 CFLAGS = -std=c99 -g
-APP_NAME = hufpakk
 
 
 main: huffman.o main.c
@@ -12,4 +15,4 @@ main: huffman.o main.c
 
 #gcc -o hufpakk huffman.c main.c -I.
 clean:
-	rm -rf *.o $(APP_NAME)
+	rm -rf *.o $(APP_NAME) $(TEST_FILE)
