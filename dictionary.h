@@ -2,6 +2,9 @@
 
 typedef enum {
     DICT_OK,
+    DICT_EMPTY,
+    DICT_NO_SUCH_ELEMENT,
+    DICT_MEMORY_ERROR,
 } dict_error_t;
 
 typedef struct {
@@ -16,7 +19,7 @@ typedef struct {
 
 //#############################################################
 dict_error_t dict_create(
-    dict_dict_t * dict
+    dict_dict_t **dict
 );
 
 dict_error_t dict_add(
@@ -36,5 +39,5 @@ dict_error_t dict_pop(
 );
 
 dict_error_t dict_free(
-    dict_dict_t * dict
+    dict_dict_t **dict
 );
