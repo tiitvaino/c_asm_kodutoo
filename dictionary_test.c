@@ -1,7 +1,7 @@
 // dictionary_test.c
 # include "dictionary.h"
 #include <stdio.h>
-#include <stdbool.h> // TODO delete later
+#include <stdbool.h>
 
 char c_s[3] = {'x','a','b'};
 int c_s_nr[3] = {12,3,2};
@@ -14,34 +14,34 @@ static void FAIL(int test_nr){
     printf("%d: FAIL\n",test_nr);
 };
 
-static void test_create(dict_dict_t **dict)
+static void test_create(dict_count_dict_t **dict)
 {
     int test_nr = 1;
     dict_error_t error = DICT_OK;
-    if ( error = dict_create(dict)) FAIL(test_nr);
+    if ( error = dict_create_count(dict)) FAIL(test_nr);
     else if ((*dict) != NULL && (*dict)->size == 0) OK(test_nr);
     else FAIL(test_nr);
     return;
 }
 
-static void test_add_and_get(dict_dict_t *dict)
+static void test_add_and_get(dict_count_dict_t *dict)
 {
     int test_nr = 2;
     dict_error_t error = DICT_OK;
     char c;
     int nr_c;
-    int nr_c_got;
+    size_t nr_c_got;
 
     for (size_t i = 0; i < sizeof(c_s); i++)
     {
         c = c_s[i];
         nr_c = c_s_nr[i];
         for (size_t j = 0; j < nr_c; j++)
-            if (error = dict_add(dict,c)){
+            if (error = dict_add_count(dict,c)){
                 FAIL(test_nr);
                 return;
             }
-        if(error = dict_get(dict,c,&nr_c_got)){
+        if(error = dict_get_count(dict,c,&nr_c_got)){
             FAIL(test_nr);
             return;
         }
@@ -61,15 +61,15 @@ static void test_add_and_get(dict_dict_t *dict)
     return;
 }
 
-static void test_pop(dict_dict_t *dict)
+static void test_pop(dict_count_dict_t *dict)
 {
     int test_nr = 3;
     dict_error_t error = DICT_OK;
-    dict_node_t node_test = {'\0',0};
+    dict_count_node_t node_test = {'\0',0};
 
     for (size_t i = 0; i < sizeof(c_s); i++)
     {
-        if (error = dict_pop(dict,&node_test)){
+        if (error = dict_pop_count(dict,&node_test)){
             FAIL(test_nr);
             return;
         }
@@ -80,24 +80,24 @@ static void test_pop(dict_dict_t *dict)
         }
     }
 
-    error = dict_pop(dict,&node_test);
+    error = dict_pop_count(dict,&node_test);
     if (error != DICT_EMPTY || dict->size != 0)  FAIL(test_nr);
-    OK(test_nr);
+    else OK(test_nr);
     return;
 }
 
-static void test_free(dict_dict_t **dict)
+static void test_free(dict_count_dict_t **dict)
 {
     dict_error_t error = DICT_OK;
     int test_nr = 4;
-    if( error = dict_free(dict)) FAIL(test_nr);
+    if( error = dict_free_count(dict)) FAIL(test_nr);
     else if ((*dict) != NULL) FAIL(test_nr);
-    OK (test_nr);
+    else OK (test_nr);
 }
 
 int main()
 {
-    dict_dict_t *dict = NULL;
+    dict_count_dict_t *dict = NULL;
     // test nr 1
     test_create(&dict);
     // test nr 2
