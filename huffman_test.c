@@ -52,7 +52,7 @@ static void close_files(FILE *src_file, FILE *dst_file)
 int main(int argc, char **argv)
 {
 	h_error_t result = H_OK;
-	char *src_file_name = "proov.txt";
+	char *src_file_name = "proov.txt";//"anton_hansen_tammsaare_tode_ja_oigus_i.txt";// Natuke tummisem, toimub mälu sodimine kahjuks
 	char *packed_file_name = "proov.hup";
     char *unpacked_file_name = "proov1.txt";
 
@@ -128,6 +128,14 @@ int main(int argc, char **argv)
         // Kontrollime sümboleid
         for (size_t i = 0; i < bytes_read_1 && filelen_1 >= 0; i++, filelen_1--, filelen_2--){
             if(ptr_1[i] != ptr_2[i]){
+                for (size_t j = 0; j < i; j++)
+                {
+                    printf("%c",ptr_1[j]);
+                }
+                printf("\n");
+                
+                char c1 = ptr_1[i];
+                char c2 = ptr_2[i];
                 printf("FAIL! Difference in symbols\n");
                 close_files(src_file,dst_file);
                 exit(0);

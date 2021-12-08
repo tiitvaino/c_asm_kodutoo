@@ -230,7 +230,7 @@ static h_error_t pack_and_write(dict_bit_dict_t *dict, FILE *src_file, FILE *dst
     //}
     
     size_t bytes_read = 1;
-    char bit_buffer_value = 0;
+    size_t bit_buffer_value = 0;
     int bit_buffer_size = sizeof(bit_buffer_value)*8;
     int bit_buffer_written=0;
     //Kirjutame pakitud teksti ja loeme algse teksti
@@ -241,24 +241,31 @@ static h_error_t pack_and_write(dict_bit_dict_t *dict, FILE *src_file, FILE *dst
         
         // Kodeerime loetud baidid ja kirjutame välja
         for (size_t i = 0; i < bytes_read && filelen >= 0; i++, filelen--){
+            char c = ptr[i];
             size_t value = 0;
             int value_len = 0;
-            dict_get_bit(dict,ptr[i],&value,&value_len);
+            dict_get_bit(dict,c,&value,&value_len);
             if (bit_buffer_written + value_len > bit_buffer_size){
                 int free_space_size = bit_buffer_size-bit_buffer_written;
                 int leftover_bits = value_len-free_space_size;
                 bit_buffer_value = bit_buffer_value | (value>>leftover_bits);
 
-                // kirjutame välja
-                written = fwrite(&bit_buffer_value, sizeof(bit_buffer_value), 1, dst_file);
-                if (written != 1){
-                    printf("Problem with writing into the file. :(\n");
-                    free(ptr);
-                    return H_ERROR;
+                // kirjutame välja baidi kaupa, et oleks lihtsam välja lugeda
+                for (int i = sizeof(bit_buffer_value)-1; i >= 0 ; i--)
+                {
+                    // suuremad baidid enne
+                    char out = (bit_buffer_value >> 8 * i);
+                    written = fwrite(&out, sizeof(out), 1, dst_file);
+                    if (written != 1){
+                        printf("Problem with writing into the file. :(\n");
+                        free(ptr);
+                        return H_ERROR;
+                    }
                 }
+                
                 // kanname ülejäänud bitid üle
                 size_t mask = 0;
-                for (size_t i = leftover_bits; i < sizeof(size_t); i++)
+                for (size_t i = leftover_bits; i < sizeof(mask); i++)
                     mask = (mask << 8)|0xff;
                 mask = mask << leftover_bits;
 
@@ -294,7 +301,7 @@ static h_error_t pack_and_write(dict_bit_dict_t *dict, FILE *src_file, FILE *dst
         }
         char bytes[bytes_to_write];
         for (size_t i = 0; i < bytes_to_write; i++)
-            bytes[bytes_to_write-1-i] = (bit_buffer_value >> 8*i) & 0xFF;
+            bytes[i] = (bit_buffer_value >> bit_buffer_size - 8*(1+i)) & 0xFF;
 
 
         written = fwrite(bytes, sizeof(char), bytes_to_write, dst_file);
@@ -424,7 +431,8 @@ h_error_t h_unpack(FILE *src_file, FILE *dst_file)
         return H_ERROR;
     }
     bytes_read += x_read * sizeof(dict_bit_dict_t);
-    x_read = fread(dict->nodes, sizeof(dict_bit_node_t), dict->size, src_file);
+    dict_bit_node_t *nodes = (dict_bit_node_t *) malloc(dict->size * sizeof(dict_bit_node_t));
+    x_read = fread(nodes, sizeof(dict_bit_node_t), dict->size, src_file);
     if (x_read != dict->size){
         printf("File is corrupted!\n");
         free(ptr_in);
@@ -433,6 +441,7 @@ h_error_t h_unpack(FILE *src_file, FILE *dst_file)
         return H_ERROR;
     }
     bytes_read += x_read * sizeof(dict_bit_node_t);
+    dict->nodes = nodes;
     dict->hidden_size = dict->size;
 
     //Prindime saadud sõnaraamatu välja
@@ -443,19 +452,19 @@ h_error_t h_unpack(FILE *src_file, FILE *dst_file)
     //}
 
     filelen -= bytes_read;
-    bytes_read = 0;
 
     size_t bit_buffer = 0;
     int bit_buffer_read = 0;
     //Loeme pakitud ja kirjutame lahtipakitud teksti
-    while(filelen > 0) 
+    while(filelen > 0 || packed_filelen > 0) 
     {
         // Loeme puhvri jagu baite sisse
-        x_read = fread(ptr_in,size_of_elements,buffer_size,src_file);
-        bytes_read += x_read;
-        filelen -= x_read;
+        if (filelen > 0){
+            x_read = fread(ptr_in,size_of_elements,buffer_size,src_file);
+            filelen -= x_read;
+            ptr_in_idx = 0;
+        }
 
-        ptr_in_idx = 0;
         // Dekodeerime loetud baidid ja kirjutame välja
         while (ptr_in_idx < x_read)
         {
@@ -474,9 +483,7 @@ h_error_t h_unpack(FILE *src_file, FILE *dst_file)
                 dict_error_t dict_error = dict_get_key_bit(dict, value, value_len, &symbol);
                 // Kas leidsime sobiva sümboli
                 if (dict_error == DICT_OK){
-                    size_t mask = 0;
-                    for (size_t i = 0; i < sizeof(size_t); i++)
-                        mask = (mask << 8)|0xff;
+                    size_t mask = 0xffffffffffffffff;
                     mask = mask << bit_buffer_read-1-i;
                     bit_buffer &= ~mask;// Jätame väiksema väärtusega bitid alles
                     bit_buffer_read = bit_buffer_read-1-i;
@@ -486,8 +493,17 @@ h_error_t h_unpack(FILE *src_file, FILE *dst_file)
             } 
             // Lisame veel bitte kui ei leitud sümbolit
             if (!found) {
-                bit_buffer = (bit_buffer << 8) | (ptr_in[ptr_in_idx++] & 0xff);
+                char c = ptr_in[ptr_in_idx++];
+                bit_buffer = (bit_buffer << 8) | (c & 0xff);
                 bit_buffer_read +=8;
+                if (bit_buffer_read > sizeof(bit_buffer)*8){
+                    printf("File is corrupted!\n");
+                    free(nodes);
+                    free(ptr_in);
+                    free(ptr_out);
+                    free(dict);
+                    return H_ERROR;
+                }
             }
             else{
                 found = false;
@@ -496,40 +512,49 @@ h_error_t h_unpack(FILE *src_file, FILE *dst_file)
                     ptr_out[ptr_out_idx++] = symbol;
                     packed_filelen--;
                 }
-                // Kui puhver täis, kirjutame välja
-                if (ptr_out_idx == buffer_size) {
-                    written = fwrite(ptr_out,sizeof(char),ptr_out_idx,dst_file);
-                    if (written != ptr_out_idx){
-                        printf("Problem with writing into the file. :(\n");
-                        free(ptr_in);
-                        free(ptr_out);
-                        free(dict);
-                    }
-                    ptr_out_idx = 0;
+            }
+            // Kui puhver täis, kirjutame välja
+            if (ptr_out_idx == buffer_size) {
+                written = fwrite(ptr_out,sizeof(char),ptr_out_idx,dst_file);
+                if (written != ptr_out_idx){
+                    printf("Problem with writing into the file. :(\n");
+                    free(nodes);
+                    free(ptr_in);
+                    free(ptr_out);
+                    free(dict);
                 }
+                ptr_out_idx = 0;
             }
         }
         // Kontrollime kas kõik on OK
-        if (bytes_read < buffer_size)
+        if (x_read < buffer_size && filelen != 0)
         {
-            if (filelen != 0) 
-            {
-                printf("File is corrupted!\n");
-                free(ptr_in);
-                free(ptr_out);
-                free(dict);
-                return H_ERROR;
-            }
+            printf("File is corrupted!\n");
+            free(nodes);
+            free(ptr_in);
+            free(ptr_out);
+            free(dict);
+            return H_ERROR;
         }
     }
-
+    if (packed_filelen != 0) 
+    {
+        printf("Something was not written out!\n");
+        free(nodes);
+        free(ptr_in);
+        free(ptr_out);
+        free(dict);
+        return H_ERROR;
+    }
 
     // Kirjutame veel välja, mis kirjutamata jäi
     if(ptr_out_idx > 0){
         written = fwrite(ptr_out,sizeof(char),ptr_out_idx,dst_file);
         if (written != ptr_out_idx){
             printf("Problem with writing into the file. :(\n");
+            free(nodes);
             free(ptr_in);
+            free(ptr_out);
             free(dict);
             return H_ERROR;
         }
@@ -537,6 +562,7 @@ h_error_t h_unpack(FILE *src_file, FILE *dst_file)
 
     // Liigume faili algusesse tagasi
     rewind(src_file);
+    free(nodes);
     free(ptr_in);
     free(ptr_out);
     free(dict);
